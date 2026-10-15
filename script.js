@@ -102,9 +102,11 @@ if (window.matchMedia("(hover: hover)").matches) {
   document.querySelectorAll(".tilt").forEach((card) => {
     card.addEventListener("mousemove", (e) => {
       const r = card.getBoundingClientRect();
+      card.style.setProperty("--mx", e.clientX - r.left + "px");
+      card.style.setProperty("--my", e.clientY - r.top + "px");
       const x = (e.clientX - r.left) / r.width - 0.5;
       const y = (e.clientY - r.top) / r.height - 0.5;
-      card.style.transform = `perspective(700px) rotateX(${-y * 6}deg) rotateY(${x * 6}deg)`;
+      card.style.transform = `perspective(700px) rotateX(${-y * 4}deg) rotateY(${x * 4}deg)`;
     });
     card.addEventListener("mouseleave", () => (card.style.transform = ""));
   });
@@ -155,7 +157,7 @@ function resize() {
 }
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = "rgba(108, 140, 255, 0.35)";
+  ctx.fillStyle = getComputedStyle(document.body).getPropertyValue("--dot").trim();
   dots.forEach((d) => {
     d.x = (d.x + d.vx + canvas.width) % canvas.width;
     d.y = (d.y + d.vy + canvas.height) % canvas.height;

@@ -140,33 +140,76 @@ document.getElementById("contactForm").addEventListener("submit", (e) => {
   document.getElementById("formNote").textContent = "Opening your email app…";
 });
 
-// Background: slow drifting dots
+// Background: faint market-style line that slowly draws across the screen
 const canvas = document.getElementById("bgCanvas");
 const ctx = canvas.getContext("2d");
-let dots = [];
+let series = [];
+let head = 0;
+function makeSeries(n) {
+  const out = [];
+  let v = 0.55;
+  for (let i = 0; i < n; i++) {
+    v += (Math.random() - 0.47) * 0.035; // slight upward drift
+    v = Math.min(0.85, Math.max(0.2, v));
+    out.push(v);
+  }
+  return out;
+}
 function resize() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
-  const count = Math.min(60, Math.floor(window.innerWidth / 25));
-  dots = Array.from({ length: count }, () => ({
-    x: Math.random() * canvas.width,
-    y: Math.random() * canvas.height,
-    vx: (Math.random() - 0.5) * 0.3,
-    vy: (Math.random() - 0.5) * 0.3,
-  }));
+  series = makeSeries(Math.ceil(canvas.width / 6) + 1);
+  head = series.length;
 }
-function draw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = getComputedStyle(document.body).getPropertyValue("--dot").trim();
-  dots.forEach((d) => {
-    d.x = (d.x + d.vx + canvas.width) % canvas.width;
-    d.y = (d.y + d.vy + canvas.height) % canvas.height;
-    ctx.beginPath();
-    ctx.arc(d.x, d.y, 1.6, 0, Math.PI * 2);
-    ctx.fill();
-  });
-  requestAnimationFrame(draw);
+function drawChart(count) {
+  const w = canvas.width, h = canvas.height, step = w / (series.length - 1);
+  const css = getComputedStyle(document.body);
+  ctx.clearRect(0, 0, w, h);
+  // grid
+  ctx.strokeStyle = css.getPropertyValue("--grid").trim();
+  ctx.lineWidth = 1;
+  for (let y = 80; y < h; y += 80) { ctx.beginPath(); ctx.moveTo(0, y + 0.5); ctx.lineTo(w, y + 0.5); ctx.stroke(); }
+  for (let x = 120; x < w; x += 120) { ctx.beginPath(); ctx.moveTo(x + 0.5, 0); ctx.lineTo(x + 0.5, h); ctx.stroke(); }
+  if (count < 2) return;
+  const pts = series.slice(0, count).map((v, i) => [i * step, h - v * h]);
+  // area under the line
+  const fill = ctx.createLinearGradient(0, 0, 0, h);
+  fill.addColorStop(0, css.getPropertyValue("--dot").trim());
+  fill.addColorStop(1, "transparent");
+  ctx.beginPath();
+  ctx.moveTo(pts[0][0], h);
+  pts.forEach(([x, y]) => ctx.lineTo(x, y));
+  ctx.lineTo(pts[pts.length - 1][0], h);
+  ctx.closePath();
+  ctx.globalAlpha = 0.35;
+  ctx.fillStyle = fill;
+  ctx.fill();
+  ctx.globalAlpha = 1;
+  // line
+  ctx.beginPath();
+  pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+  ctx.strokeStyle = css.getPropertyValue("--dot").trim();
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  // leading dot
+  const [lx, ly] = pts[pts.length - 1];
+  ctx.fillStyle = css.getPropertyValue("--accent").trim();
+  ctx.beginPath();
+  ctx.arc(lx, ly, 2.5, 0, Math.PI * 2);
+  ctx.fill();
 }
-window.addEventListener("resize", resize);
+function animate() {
+  if (head < series.length) head += 0.6;
+  else {
+    // keep it alive: shift left and add a new point every few frames
+    series.shift();
+    let v = series[series.length - 1] + (Math.random() - 0.48) * 0.035;
+    series.push(Math.min(0.85, Math.max(0.2, v)));
+  }
+  drawChart(Math.floor(head));
+  setTimeout(() => requestAnimationFrame(animate), head < series.length ? 0 : 220);
+}
+window.addEventListener("resize", () => { resize(); drawChart(series.length); });
 resize();
-if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) draw();
+if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) drawChart(series.length);
+else { head = 0; animate(); }

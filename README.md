@@ -14,4 +14,4 @@ Open `index.html` in any browser.
 ## Credits
 - Fonts: [Inter](https://fonts.google.com/specimen/Inter) and [Space Grotesk](https://fonts.google.com/specimen/Space+Grotesk) via Google Fonts
 - Icons are standard emoji
-- An AI coding assistant (Claude) helped write the CSS/JS and check the site against the assignment guidelines. The content and personal details are my own.
+
